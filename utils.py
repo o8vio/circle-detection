@@ -86,15 +86,56 @@ def multiclass_brier_score_loss(y_true, y_probs):
     return loss/N
 
 
-def plot_scores(ax, x_values, results):
+def plot_scores(x_values, train_scores, val_scores, title, shape=None, **kwargs):
 
-    for score_type, color, label in [('train_score', 'tab:blue', 'Training score'),
-                                     ('test_score', 'tab:green', 'Validation score')]:
+    if shape == None:
+
+        t_means = train_scores.mean(axis=1)
+        t_stds = train_scores.std(axis=1)
+        v_means = val_scores.mean(axis=1)
+        v_stds = val_scores.std(axis=1)
         
-        mean = results[score_type+'s_mean']
-        std = results[score_type+'s_std']
+        plt.figure(figsize=(6,6))
+        plt.title(title)
+        
+        plt.plot(x_values, t_means, '-o', color='tab:blue', label='training score')
+        plt.plot(x_values, v_means, '-o', color='tab:green', label='validation score')
+        plt.fill_between(x_values, t_means - t_stds, t_means + t_stds,
+                         alpha=0.1, color='tab:blue')
+        plt.fill_between(x_values, v_means - v_stds, v_means + v_stds,
+                         alpha=0.1, color='tab:green')
+        plt.grid()
+        plt.tight_layout()
+        plt.legend(loc='lower right')
+        filename = title.replace(' ', '_')+'.pdf'
+        plt.savefig(filename)
+    
+    else:
 
-        ax.plot(x_values, mean, '-o', color=color, label=label)
-        ax.fill_between(x_values, mean - std, mean + std, alpha=0.1, color=color)
+        rows, cols = shape
+        
+        fig, axs = plt.subplots(rows, cols, figsize=(10, 4*rows))
 
-    ax.legend(loc='lower right', fontsize=8)
+        for i, scores in enumerate(zip(train_scores, val_scores)):
+
+            i_row, i_col = i // cols, i % cols
+            
+            axs[i_row, i_col].set_title(title[i])
+
+            t_means = scores[0].mean(axis=1)
+            t_stds = scores[0].std(axis=1)
+            v_means = scores[1].mean(axis=1)
+            v_stds = scores[1].std(axis=1)
+
+            axs[i_row, i_col].plot(x_values, t_means, '-o', color='tab:blue', label='training score')
+            axs[i_row, i_col].fill_between(x_values, t_means - t_stds, t_means + t_stds, 
+                                           alpha=0.1, color='tab:blue')
+            axs[i_row, i_col].plot(x_values, v_means, '-o', color='tab:green', label='validation score')
+            axs[i_row, i_col].fill_between(x_values, v_means - v_stds, v_means + v_stds, 
+                                           alpha=0.1, color='tab:green')
+
+            axs[i_row, i_col].legend(loc='lower right', fontsize=8)
+            axs[i_row, i_col].set_xlabel(kwargs['x_label'])
+            axs[i_row, i_col].set_ylabel(kwargs['y_label'])
+        
+        plt.savefig('many_scores.pdf')
