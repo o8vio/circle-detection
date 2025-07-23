@@ -31,7 +31,7 @@ def bars_in_interval(dgm, center, radius, strict):
 
 def jth_max_bar(dgm, j):
 
-    return dgm[ np.flip( np.argsort( dgm[:,1] - dgm[:,0] ) )[j-1] ] if dgm.shape[0] >= j else np.full((3,), 0)
+    return dgm[ np.flip( np.argsort( dgm[:,1] - dgm[:,0] ) )[j-1] ].reshape(1,-1) if dgm.shape[0] >= j else np.full((1,3), 0)
 
 
 

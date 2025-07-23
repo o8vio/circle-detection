@@ -144,9 +144,9 @@ class topopipeline:
     
     def jth_max_birth(self, dim, j, **kwargs):
 
-        return np.array([ self._get_jth_bar(self._get_subdiagram(dgm, dim, **kwargs), j)[0] for dgm in self.diagrams ]).reshape(self.num_samples, -1)
+        return np.array([ self._get_jth_bar(self._get_subdiagram(dgm, dim, **kwargs), j)[0,0] for dgm in self.diagrams ]).reshape(self.num_samples, -1)
 
 
     def jth_max_death(self, dim, j, **kwargs):
 
-        return np.array([ self._get_jth_bar(self._get_subdiagram(dgm, dim, **kwargs), j)[1] for dgm in self.diagrams ]).reshape(self.num_samples, -1)
+        return np.array([ self._get_jth_bar(self._get_subdiagram(dgm, dim, **kwargs), j)[0,1] for dgm in self.diagrams ]).reshape(self.num_samples, -1)
