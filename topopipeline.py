@@ -112,7 +112,7 @@ class topopipeline:
     
     def amplitude(self, **kwargs):
 
-        return diagrams.Amplitud(**kwargs).fit_transform(self.diagrams).reshape(self.num_samples, -1)
+        return diagrams.Amplitude(**kwargs).fit_transform(self.diagrams).reshape(self.num_samples, -1)
     
     
     
