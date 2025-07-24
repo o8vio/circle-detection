@@ -12,10 +12,11 @@ class topopipeline:
     def __init__(self, data, data_params, bootstrap_params):
 
         self.data_params = data_params
+        self.bootstrap_params = bootstrap_params
         self.num_samples = len(data)
         self.pointclouds = [ pointcloud for pointcloud, _ in data ]
         self.labels = [ label for _, label in data ]
-        if bootstrap_params['bootstrap']:
+        if self.bootstrap_params['bootstrap']:
 
             self.diagrams = bootstrap_dgms(self.pointclouds, **bootstrap_params)
 
@@ -30,14 +31,14 @@ class topopipeline:
                bootstrap=False, R_resamples=None, resample_size=None, random_state=None):
         
         data_params = {'seed': seed,
-                  'samples_per_class' : samples_per_class,
-                  'avg_points' : avg_points,
-                  'std_points' : std_points,
-                  'world_dim' : world_dim,
-                  'r_min' : r_min,
-                  'r_max' : r_max,
-                  'eps' : eps,
-                  'sigma' : sigma }
+                       'samples_per_class' : samples_per_class,
+                       'avg_points' : avg_points,
+                       'std_points' : std_points,
+                       'world_dim' : world_dim,
+                       'r_min' : r_min,
+                       'r_max' : r_max,
+                       'eps' : eps,
+                       'sigma' : sigma }
         
         bootstrap_params = { 'bootstrap' : bootstrap,
                              'R_resamples' : R_resamples,
@@ -53,17 +54,19 @@ class topopipeline:
 
         content = np.load(filename, allow_pickle=True)
         
-        data, data_params = list(content[0]), content[1]
+        data, data_params, bootstrap_params = list(content[0]), content[1], content[2]
         
-        return topopipeline(data, data_params)
+        return topopipeline(data, data_params, bootstrap_params)
     
     
     def save(self, filename):
 
         data = list( zip(self.pointclouds, self.labels) )
         data_params = self.data_params
+        bootstrap_params = self.bootstrap_params
 
-        np.save(filename, np.array( (data, data_params), dtype=object), allow_pickle=True)
+        np.save(filename, np.array( (data, data_params, bootstrap_params), dtype=object), 
+                allow_pickle=True)
     
     
     def plot(self, idx):

@@ -4,13 +4,17 @@ from gtda import homology
 from featurization import off_diagonal
 
 
-def fill_dgms(dgms, maxs, max_idx):
+def fill_dgms(dgms, maxs, maxs_idxs):
+    """
+    Pad each diagram with zeros or duplicated values
+    so that they all have equal shape.
+    """
 
     n_dgms = len(dgms)
     
     filled_dgms = []
 
-    fill_value = dgms[max_idx][-1, 0]
+    fill_value = dgms[maxs_idxs[1]][-1, 0]
 
     for dgm in dgms:
 
@@ -25,7 +29,7 @@ def fill_dgms(dgms, maxs, max_idx):
         if dgm1.shape[0] < maxs[1]:
 
             missing = maxs[1] - dgm1.shape[0]
-            filling = np.c_[np.full((missing, 2), fill_value), np.full(missing, 1)]
+            filling = np.c_[np.full((missing, 2), fill_value), np.ones(missing)]
             dgm1 = np.concatenate( ( dgm1, filling ) )
         
         filled_dgms.append(np.concatenate( (dgm0, dgm1) ))
@@ -34,23 +38,27 @@ def fill_dgms(dgms, maxs, max_idx):
 
             
 
-def bootstrap_dgms(pointclouds, **params):
-
-    R_samples, resample_size = params['R_resamples'], params['resample_size']
-    rs = params['random_state']
-
+def bootstrap_dgms(pointclouds, R_resamples, resample_size, random_state=None):
+    """
+    Given a list of pointclouds, resample each one 'R_resamples' times,
+    compute and return combined persistence diagrams.
+    """
+    
     max0, max1 = 0, 0
-    max1_idx = 0
+    max0_idx, max1_idx = 0, 0
     
     combined_dgms = []
-    
-    for i, pointcloud in enumerate(pointclouds):
 
-        N_points = pointcloud.shape[0]
-        resamples = [ resample(pointcloud, replace=False, n_samples=int(resample_size*N_points), random_state=rs)
-                      for _ in range(R_samples) ]
+    vr_persistence = homology.VietorisRipsPersistence()
+    
+    for i, pc in enumerate(pointclouds):
+
+        n_points = pc.shape[0]
         
-        resamples_dgms = homology.VietorisRipsPersistence().fit_transform(resamples)
+        resamples = [ resample(pc, replace=False, n_samples=int(resample_size * n_points), random_state=random_state)
+                      for _ in range(R_resamples) ]
+        
+        resamples_dgms = vr_persistence.fit_transform(resamples)
         
         combined_dgm = off_diagonal(resamples_dgms.reshape(-1,3))
         
@@ -60,15 +68,14 @@ def bootstrap_dgms(pointclouds, **params):
         cdgm1 = combined_dgm[ combined_dgm[:,2] == 1 ]
         cdgm1 = cdgm1[np.lexsort((-cdgm1[:,1],-cdgm1[:,0]))]
         
-        combined_dgms.append(np.concatenate((cdgm0, cdgm1)))
-
         if cdgm0.shape[0] > max0:
 
-            max0 = cdgm0.shape[0]
+            max0, max0_idx = cdgm0.shape[0], i            
 
         if cdgm1.shape[0] > max1:
 
-            max1 = cdgm1.shape[0]
-            max1_idx = i
-    
-    return fill_dgms(combined_dgms, (max0, max1), max1_idx)
+            max1, max1_idx = cdgm1.shape[0], i
+
+        combined_dgms.append(np.concatenate((cdgm0, cdgm1)))
+
+    return fill_dgms(combined_dgms, (max0, max1), (max0_idx, max1_idx))
