@@ -1,25 +1,35 @@
 import numpy as np
 from gtda import homology, diagrams
+from sklearn.utils import resample
 from data_generation import *
 from featurization import *
 from utils import plot_pointcloud
-
+from pointcloud_bootstrap import bootstrap_dgms
 
 
 class topopipeline:
 
-    def __init__(self, data, data_params):
+    def __init__(self, data, data_params, bootstrap_params):
 
         self.data_params = data_params
         self.num_samples = len(data)
         self.pointclouds = [ pointcloud for pointcloud, _ in data ]
         self.labels = [ label for _, label in data ]
-        self.diagrams = homology.VietorisRipsPersistence().fit_transform(self.pointclouds)
+        if bootstrap_params['bootstrap']:
+
+            self.diagrams = bootstrap_dgms(self.pointclouds, **bootstrap_params)
+
+        else:
+            
+            self.diagrams = homology.VietorisRipsPersistence().fit_transform(self.pointclouds)
+    
     
     @staticmethod
-    def random(seed=8, samples_per_class=20, avg_points=200, std_points=10, world_dim=3, r_min=0.1, r_max=0.3, eps=0.1, sigma=0.1):
+    def random(seed=8, samples_per_class=20, avg_points=200, std_points=10, 
+               world_dim=3, r_min=0.1, r_max=0.3, eps=0.1, sigma=0.1,
+               bootstrap=False, R_resamples=None, resample_size=None, random_state=None):
         
-        params = {'seed': seed,
+        data_params = {'seed': seed,
                   'samples_per_class' : samples_per_class,
                   'avg_points' : avg_points,
                   'std_points' : std_points,
@@ -29,9 +39,14 @@ class topopipeline:
                   'eps' : eps,
                   'sigma' : sigma }
         
-        data = generate_dataset(**params)
+        bootstrap_params = { 'bootstrap' : bootstrap,
+                             'R_resamples' : R_resamples,
+                             'resample_size' : resample_size,
+                             'random_state' : random_state }
         
-        return topopipeline(data, params)
+        data = generate_dataset(**data_params)
+        
+        return topopipeline(data, data_params, bootstrap_params)
     
     @staticmethod
     def from_file(filename):
