@@ -9,14 +9,14 @@ from pointcloud_bootstrap import bootstrap_dgms
 
 class topopipeline:
 
-    def __init__(self, data, data_params, bootstrap_params):
+    def __init__(self, data, data_params, bootstrap, bootstrap_params):
 
         self.data_params = data_params
         self.bootstrap_params = bootstrap_params
         self.num_samples = len(data)
         self.pointclouds = [ pointcloud for pointcloud, _ in data ]
         self.labels = [ label for _, label in data ]
-        if self.bootstrap_params['bootstrap']:
+        if bootstrap:
 
             self.diagrams = bootstrap_dgms(self.pointclouds, **bootstrap_params)
 
@@ -40,14 +40,13 @@ class topopipeline:
                        'eps' : eps,
                        'sigma' : sigma }
         
-        bootstrap_params = { 'bootstrap' : bootstrap,
-                             'R_resamples' : R_resamples,
+        bootstrap_params = { 'R_resamples' : R_resamples,
                              'resample_size' : resample_size,
                              'random_state' : random_state }
         
         data = generate_dataset(**data_params)
         
-        return topopipeline(data, data_params, bootstrap_params)
+        return topopipeline(data, data_params, bootstrap, bootstrap_params)
     
     @staticmethod
     def from_file(filename):
