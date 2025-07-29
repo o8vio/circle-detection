@@ -85,11 +85,11 @@ class topopipeline:
 
         dgm = dgm[ dgm[:, 2] == dim ]
         
-        if 'min' in kwargs:
-            return bars_in_range_interval(dgm, kwargs['min'], kwargs['max']) if 'max' in kwargs else bars_in_range_interval(dgm, kwargs['min'])
+        if 'pmin' in kwargs:
+            return bars_in_range_interval(dgm, **kwargs)
         
-        elif 'center' in kwargs:
-            return bars_in_interval(dgm, kwargs['center'], kwargs['radius'], kwargs['strict'])
+        elif 'low' in kwargs:
+            return bars_in_interval(dgm, **kwargs)
         
         else:
             return off_diagonal(dgm)

@@ -9,22 +9,38 @@ def off_diagonal(dgm):
     return dgm[ dgm[:,1] - dgm[:,0] > 0 ]
 
 
-def bars_in_range_interval(dgm, min, max=1):
+def bars_in_range_interval(dgm, pmin, pmax=None, relative=False):
 
     dgm = off_diagonal(dgm)
-    max_persistence = np.max( dgm[:,1] - dgm[:,0] ) if dgm.shape[0] > 0 else 0
+    pmax = 1 if pmax == None else pmax
+    
+    if relative:
 
-    interval = max_persistence * min, max_persistence * max
+        max_persistence = np.max( dgm[:,1] - dgm[:,0] ) if dgm.shape[0] > 0 else 0
+        
+        interval = max_persistence * pmin, max_persistence * pmax
+    
+    else:
+
+        interval = pmin, pmax
 
     return dgm[ (dgm[:,1] - dgm[:,0] >= interval[0]) & (dgm[:,1] - dgm[:,0] <= interval[1]) ]
 
 
-def bars_in_interval(dgm, center, radius, strict):
+def bars_in_interval(dgm, low, high=None, strict=True, relative=False):
 
     dgm = off_diagonal(dgm)
-    max_death = np.max( dgm[:,1] ) if dgm.shape[0] > 0 else 0
+    high = 1 if high == None else high
     
-    interval = max_death * (center - radius), max_death * (center + radius)
+    if relative:
+        
+        max_death = np.max( dgm[:,1] ) if dgm.shape[0] > 0 else 0
+
+        interval = max_death * low, max_death * high
+
+    else:
+        
+        interval = low, high
 
     return dgm[ (dgm[:,0] >= interval[0]) & (dgm[:,1] <= interval[1]) ] if strict else dgm[ (dgm[:,0] < interval[1]) & (dgm[:,1] > interval[0]) ]
 
