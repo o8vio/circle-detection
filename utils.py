@@ -1,4 +1,5 @@
 import numpy as np, matplotlib.pyplot as plt
+from itertools import count
 import json
 
 
@@ -87,50 +88,69 @@ def multiclass_brier_score_loss(y_true, y_probs):
     return loss/N
 
 
-def plot_results(param_range, results, **kwargs):
+def plot_results(param_name, param_range, results, **kwargs):
 
   n_features = results.shape[2]
 
-  rows = n_features // 2 + 1 if n_features % 2 == 1 else n_features // 2
+  n_rows = n_features // 2 + 1 if n_features % 2 == 1 else n_features // 2
 
-  fig, axs = plt.subplots(rows, 2, figsize=(7*rows, 10))
+  fig, axs = plt.subplots(n_rows, 2, figsize=(12, 4 * n_rows))
+  axs = np.atleast_1d(axs).flatten()
 
+  is_mix_counter_ = count(1)
   titles = kwargs['titles']
 
-  if kwargs['param_name'] == 'world dim':
+  if param_name == 'world dim':
 
     dim_values = param_range.copy()
-    param_range = np.arange(len(dim_values))
-
-  for i, feature_key in enumerate(results):
-
-    i_row, i_col = i // 2, i % 2
-
-    axs[i_row, i_col].set_title(titles[i])
-
-    t_means, t_stds = results[:,:,i,0].mean(axis=1), results[:,:,i,0].std(axis=1)
-    v_means, v_stds = results[:,:,i,1].mean(axis=1), results[:,:,i,1].std(axis=1)
-
-    axs[i_row, i_col].plot(param_range, t_means, '-o', color='tab:blue', label='training score')
-    axs[i_row, i_col].plot(param_range, v_means, '-o', color='tab:green', label='validation score')
-
-    if kwargs['fill']:
-
-      axs[i_row, i_col].fill_between(param_range, t_means - t_stds, t_means + t_stds, alpha=0.1, color='tab:blue')
-      axs[i_row, i_col].fill_between(param_range, v_means - v_stds, v_means + v_stds, alpha=0.1, color='tab:green')
-
-    if kwargs['param_name'] == 'world_dim':
-
-      axs[i_row, i_col].set_xticks(param_range)
-      axs[i_row, i_col].set_xticklabels(dim_values)
-
-    axs[i_row, i_col].legend(loc='lower right', fontsize=8)
-    axs[i_row, i_col].set_xlabel(kwargs['param_name'])
-    axs[i_row, i_col].set_ylabel(kwargs['y_label'])
-
-  if kwargs['show']:
+    param_range_ = np.arange(len(dim_values))
+  
+  else:
      
+     param_range_ = param_range.copy()
+
+  for i in range(n_features):
+
+    ax = axs[i]
+    
+    ax.set_title(titles[i])
+    ax.set_aspect('equal')
+
+    t_means = results[:,:,i,0].mean(axis=1)
+    t_stds = results[:,:,i,0].std(axis=1)
+    v_means = results[:,:,i,1].mean(axis=1)
+    v_stds = results[:,:,i,1].std(axis=1)
+
+    ax.plot(param_range, t_means, '-o', color='tab:blue', label='training score')
+    ax.plot(param_range, v_means, '-o', color='tab:green', label='validation score')
+
+    if kwargs.get('fill', True):
+
+      ax.fill_between(param_range, t_means - t_stds, t_means + t_stds, alpha=0.1, color='tab:blue')
+      ax.fill_between(param_range, v_means - v_stds, v_means + v_stds, alpha=0.1, color='tab:green')
+
+    if param_name == 'world_dim':
+
+      ax.set_xticks(param_range)
+      ax.set_xticklabels(dim_values)
+
+    ax.legend(loc='lower right', fontsize=8)
+    ax.set_xlabel(param_name)
+    ax.set_ylabel(kwargs.get('y_label', 'accuracy'))
+
+  for j in range(n_features, len(axs)):
+     
+     fig.delaxes(axs[j])
+  
+  plt.tight_layout()
+  
+  if kwargs.get('save', True):
+     fig.savefig(kwargs.get('figname', './figure.pdf'))
+  
+  if kwargs.get('show', True):
      plt.show()
+  else:
+     plt.close(fig)
 
 
 def save_results(results, filename):
