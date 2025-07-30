@@ -94,7 +94,7 @@ def plot_results(param_name, param_range, results, **kwargs):
 
   n_rows, n_columns = kwargs.get('n_rows', int(np.ceil(n_features / 2))), kwargs.get('n_columns', 2)
 
-  fig, axs = plt.subplots(n_rows, n_columns, constrained_layout=True)
+  fig, axs = plt.subplots(n_rows, n_columns, constrained_layout=True, figsize=kwargs.get('figsize', (5 * n_columns, 15 * n_rows)))
   axs = np.atleast_1d(axs).flatten()
 
   titles = kwargs['titles']
