@@ -1,7 +1,3 @@
-import sys
-sys.path.append('C:\\Users\\Octavio\\Desktop\\tesis\\topocircles\\')
-
-
 from topopipeline import *
 from utils import plot_scores, save_results
 from sklearn.ensemble import RandomForestClassifier
@@ -17,7 +13,7 @@ rf_params = { 'n_estimators' : 25,
 
 avg_points_range = np.linspace(100, 300, 5, dtype=int)
 
-feature_keys = ['mix', 'betti', 'landscape', 'image']
+feature_keys = ['mix1', 'mix2', 'betti', 'landscape', 'image']
 score_keys = ['train_score', 'test_score']
 
 n_seeds = 80
@@ -32,7 +28,7 @@ for i, N in enumerate(avg_points_range):
 
     tp = topopipeline.random(seed=j, samples_per_class=20, avg_points=N, std_points=15, r_min=0.25, r_max=0.3, eps=0, sigma=0)
 
-    X_mix = np.c_[tp.persistence_entropy(),
+    X_mix1 = np.c_[tp.persistence_entropy(),
                   tp.amplitude(metric='bottleneck'),
                   tp.count_bars(dim=0, min=0.25),
                   tp.sum_bars(dim=0, min=0.25),
@@ -42,6 +38,13 @@ for i, N in enumerate(avg_points_range):
                   tp.jth_max_birth(dim=1, j=1),
                   tp.jth_max_death(dim=1, j=1)]
 
+    X_mix2 = np.c_[tp.persistence_entropy(),
+                   tp.amplitude(metric='bottleneck'),
+                   tp.count_bars(dim=0, low=0, high=0.6),
+                   tp.sum_bars(dim=0, low=0, high=0.6),
+                   tp.count_bars(dim=1, low=0, high=0.6),
+                   tp.sum_bars(dim=1, low=0, high=0.6)]
+    
     X_betti = tp.betti_curves()
 
     X_landscape = tp.persistence_landscapes(n_layers=10)
@@ -50,7 +53,7 @@ for i, N in enumerate(avg_points_range):
 
     y = tp.get_labels()
 
-    features = dict(zip(feature_keys, [X_mix, X_betti, X_landscape, X_images]))
+    features = dict(zip(feature_keys, [X_mix1, X_mix2, X_betti, X_landscape, X_images]))
 
     for feature_key in features:
 
