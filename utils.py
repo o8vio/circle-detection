@@ -87,13 +87,13 @@ def multiclass_brier_score_loss(y_true, y_probs):
     return loss/N
 
 
-def plot_scores(param_range, results, **kwargs):
+def plot_results(param_range, results, **kwargs):
 
-  n_features = len(results)
+  n_features = results.shape[2]
 
   rows = n_features // 2 + 1 if n_features % 2 == 1 else n_features // 2
 
-  fig, axs = plt.subplots(rows, 2, figsize=(5*rows, 10))
+  fig, axs = plt.subplots(rows, 2, figsize=(7*rows, 10))
 
   titles = kwargs['titles']
 
@@ -108,8 +108,8 @@ def plot_scores(param_range, results, **kwargs):
 
     axs[i_row, i_col].set_title(titles[i])
 
-    t_means, t_stds = results[feature_key]['train_score'].mean(axis=1), results[feature_key]['train_score'].std(axis=1)
-    v_means, v_stds = results[feature_key]['test_score'].mean(axis=1), results[feature_key]['test_score'].std(axis=1)
+    t_means, t_stds = results[:,:,i,0].mean(axis=1), results[:,:,i,0].std(axis=1)
+    v_means, v_stds = results[:,:,i,1].mean(axis=1), results[:,:,i,1].std(axis=1)
 
     axs[i_row, i_col].plot(param_range, t_means, '-o', color='tab:blue', label='training score')
     axs[i_row, i_col].plot(param_range, v_means, '-o', color='tab:green', label='validation score')
@@ -119,7 +119,7 @@ def plot_scores(param_range, results, **kwargs):
       axs[i_row, i_col].fill_between(param_range, t_means - t_stds, t_means + t_stds, alpha=0.1, color='tab:blue')
       axs[i_row, i_col].fill_between(param_range, v_means - v_stds, v_means + v_stds, alpha=0.1, color='tab:green')
 
-    if kwargs['param_name'] == 'world dim':
+    if kwargs['param_name'] == 'world_dim':
 
       axs[i_row, i_col].set_xticks(param_range)
       axs[i_row, i_col].set_xticklabels(dim_values)
