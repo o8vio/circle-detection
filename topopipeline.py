@@ -1,6 +1,5 @@
 import numpy as np
 from gtda import homology, diagrams
-from sklearn.utils import resample
 from data_generation import *
 from featurization import *
 from utils import plot_pointcloud
@@ -13,9 +12,13 @@ class topopipeline:
 
         self.data_params = data_params
         self.bootstrap_params = bootstrap_params
+        
         self.num_samples = len(data)
-        self.pointclouds = [ pointcloud for pointcloud, _ in data ]
-        self.labels = [ label for _, label in data ]
+        
+        self.pointclouds = [ pc for pc, _, _, _, _ in data ]
+        self.labels = [ lb for _, lb, _, _, _ in data ]
+        self.circles = [ (cs, rs, bs) for _, _, cs, rs, bs in data ]
+        
         if bootstrap:
 
             self.diagrams = bootstrap_dgms(self.pointclouds, **bootstrap_params)
@@ -27,7 +30,7 @@ class topopipeline:
     
     @staticmethod
     def random(seed=8, samples_per_class=20, avg_points=200, std_points=10, 
-               world_dim=3, r_min=0.1, r_max=0.3, eps=0.1, sigma=0.1,
+               world_dim=3, r_min=0.25, r_max=0.3, eps=0.05, sigma=0.05,
                bootstrap=False, R_resamples=None, resample_size=None, random_state=None):
         
         data_params = {'seed': seed,
@@ -48,29 +51,11 @@ class topopipeline:
         
         return topopipeline(data, data_params, bootstrap, bootstrap_params)
     
-    @staticmethod
-    def from_file(filename):
-
-        content = np.load(filename, allow_pickle=True)
-        
-        data, data_params, bootstrap_params = list(content[0]), content[1], content[2]
-        
-        return topopipeline(data, data_params, bootstrap_params)
-    
-    
-    def save(self, filename):
-
-        data = list( zip(self.pointclouds, self.labels) )
-        data_params = self.data_params
-        bootstrap_params = self.bootstrap_params
-
-        np.save(filename, np.array( (data, data_params, bootstrap_params), dtype=object), 
-                allow_pickle=True)
     
     
     def plot(self, idx):
 
-        plot_pointcloud(self.pointclouds[idx], idx % 10, self.data_params['sigma'])
+        plot_pointcloud(self.pointclouds[idx], self.labels[idx], self.data_params['sigma'])
     
     
     def get_labels(self):
