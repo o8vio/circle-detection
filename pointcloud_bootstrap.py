@@ -38,7 +38,7 @@ def fill_dgms(dgms, maxs, maxs_idxs):
 
             
 
-def bootstrap_dgms(pointclouds, R_resamples, resample_size, random_state=None):
+def bootstrap_dgms(pointclouds, num_subsamples, subsample_size, random_state=None):
     """
     Given a list of pointclouds, resample each one 'R_resamples' times,
     compute and return combined persistence diagrams.
@@ -55,12 +55,12 @@ def bootstrap_dgms(pointclouds, R_resamples, resample_size, random_state=None):
 
         n_points = pc.shape[0]
         
-        resamples = [ resample(pc, replace=False, n_samples=int(resample_size * n_points), random_state=random_state)
-                      for _ in range(R_resamples) ]
+        subsamples = [ resample(pc, replace=False, n_samples=round(subsample_size * n_points), random_state=random_state)
+                       for _ in range(num_subsamples) ]
         
-        resamples_dgms = vr_persistence.fit_transform(resamples)
+        subsamples_dgms = vr_persistence.fit_transform(subsamples)
         
-        combined_dgm = off_diagonal(resamples_dgms.reshape(-1,3))
+        combined_dgm = off_diagonal(subsamples_dgms.reshape(-1,3))
         
         cdgm0 = combined_dgm[ combined_dgm[:,2] == 0 ]
         cdgm0 = cdgm0[np.argsort(cdgm0[:,1])]
@@ -70,7 +70,7 @@ def bootstrap_dgms(pointclouds, R_resamples, resample_size, random_state=None):
         
         if cdgm0.shape[0] > max0:
 
-            max0, max0_idx = cdgm0.shape[0], i            
+            max0, max0_idx = cdgm0.shape[0], i
 
         if cdgm1.shape[0] > max1:
 

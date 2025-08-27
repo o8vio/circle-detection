@@ -55,6 +55,8 @@ def param_range_experiment(rf_params, tp_params, param_name, param_range,
 
             print(f"\rcurrent param idx: {i+1}/{len(param_range)} , current seed: {j+1}/{num_seeds}", end="")
 
+    print('\n')
+    
     if filename is not None:
 
         np.save(filename, results)
@@ -106,17 +108,19 @@ def pc_subsample_experiment(rf_params, tp_params, bootstrap_params,
             y = tp.get_labels()
 
             X_train, X_test, y_train, y_test = train_test_split(X, y, stratify=y, test_size=0.25, random_state=j)
-            Xb_train, Xb_test = train_test_split(Xb, stratify=y, test_size=0.25, random_state=j)
+            Xb_train, Xb_test, yb_train, yb_test = train_test_split(Xb, y, stratify=y, test_size=0.25, random_state=j)
 
             model.fit(X_train, y_train)
-            modelb.fit(Xb_train, y_train)
+            modelb.fit(Xb_train, yb_train)
 
             results[0,j,k,0] = model.score(X_train, y_train)
             results[0,j,k,1] = model.score(X_test, y_test)
-            results[1,j,k,0] = modelb.score(Xb_train, y_train)
-            results[1,j,k,1] = modelb.score(Xb_test, y_test)
+            results[1,j,k,0] = modelb.score(Xb_train, yb_train)
+            results[1,j,k,1] = modelb.score(Xb_test, yb_test)
 
         print(f"\rcurrent seed: {j+1}/{num_seeds}", end="")
+    
+    print('\n')
     
     if filename is not None:
 

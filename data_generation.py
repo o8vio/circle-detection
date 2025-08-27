@@ -17,10 +17,8 @@ def generate_circles(num_circles, world_dim=3, r_min=0.25, r_max=0.3):
 
 
 
-def generate_sample(num_circles, avg_points=200, std_points=10, world_dim=3, r_min=0.25, r_max=0.3, eps=0.05, sigma=0.05, seed=None):
-
-    if seed is not None:
-        np.random.seed(seed)
+def generate_sample(num_circles, avg_points=200, std_points=10, world_dim=3, 
+                    r_min=0.25, r_max=0.3, eps=0.05, sigma=0.05):
 
     num_points = round(np.random.normal(avg_points, std_points))
 
@@ -66,9 +64,14 @@ def generate_sample(num_circles, avg_points=200, std_points=10, world_dim=3, r_m
 
 def generate_dataset(**params):
 
-    seed = params.pop('seed')
+    sample_params = params.copy()
+    
+    seed = sample_params.pop('seed')
 
-    num_samples = params.pop('samples_per_class') * 10
+    if seed is not None:
+        np.random.seed(seed)
+
+    num_samples = sample_params.pop('samples_per_class') * 10
 
     dataset = []
     
@@ -76,7 +79,7 @@ def generate_dataset(**params):
 
         num_circles = i % 10
         
-        centers, radii, bases, points = generate_sample(num_circles, **params, seed=seed*i)
+        centers, radii, bases, points = generate_sample(num_circles, **sample_params)
 
         dataset.append((points, num_circles, centers, radii, bases))
     

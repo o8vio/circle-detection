@@ -8,10 +8,10 @@ from pointcloud_bootstrap import bootstrap_dgms
 
 class topopipeline:
 
-    def __init__(self, data, data_params, bootstrap, bootstrap_params):
+    def __init__(self, data, data_params, bootstrap_params):
 
-        self.data_params = data_params
-        self.bootstrap_params = bootstrap_params
+        self.data_params = data_params.copy()
+        self.bootstrap_params = bootstrap_params.copy()
         
         self.num_samples = len(data)
         
@@ -19,7 +19,7 @@ class topopipeline:
         self.labels = [ lb for _, lb, _, _, _ in data ]
         self.circles = [ (cs, rs, bs) for _, _, cs, rs, bs in data ]
         
-        if bootstrap:
+        if self.bootstrap_params['num_subsamples'] is not None:
 
             self.diagrams = bootstrap_dgms(self.pointclouds, **bootstrap_params)
 
@@ -29,9 +29,9 @@ class topopipeline:
     
     
     @staticmethod
-    def random(seed=8, samples_per_class=20, avg_points=200, std_points=10, 
-               world_dim=3, r_min=0.25, r_max=0.3, eps=0.05, sigma=0.05,
-               bootstrap=False, R_resamples=None, resample_size=None, random_state=None):
+    def random(samples_per_class=20, avg_points=200, std_points=10, 
+               world_dim=3, r_min=0.25, r_max=0.3, eps=0.05, sigma=0.05, seed=None,
+               num_subsamples=None, subsample_size=None, random_state=None):
         
         data_params = {'seed': seed,
                        'samples_per_class' : samples_per_class,
@@ -43,13 +43,13 @@ class topopipeline:
                        'eps' : eps,
                        'sigma' : sigma }
         
-        bootstrap_params = { 'R_resamples' : R_resamples,
-                             'resample_size' : resample_size,
+        bootstrap_params = { 'num_subsamples' : num_subsamples,
+                             'subsample_size' : subsample_size,
                              'random_state' : random_state }
         
         data = generate_dataset(**data_params)
         
-        return topopipeline(data, data_params, bootstrap, bootstrap_params)
+        return topopipeline(data, data_params, bootstrap_params)
     
     
     
