@@ -1,5 +1,5 @@
 import numpy as np
-from utils import sample_unit_vector
+from .utils import sample_unit_vector
 
 
 
@@ -10,7 +10,7 @@ def generate_circles(num_circles, world_dim=3, r_min=0.25, r_max=0.3):
     radii = (r_max - r_min) * np.random.rand(num_circles) + r_min
 
     bases = [ np.linalg.qr(np.random.randn(world_dim, 2))[0] 
-              for _ in range(num_circles) ] if world_dim > 2 else None
+              for _ in range(num_circles) ]
 
     return centers, radii, bases
 

@@ -1,9 +1,9 @@
 import numpy as np
 from gtda import homology, diagrams
-from data_generation import *
-from featurization import *
-from utils import plot_pointcloud
-from pointcloud_bootstrap import bootstrap_dgms
+from .data_generation import generate_dataset
+from .featurization import *
+from .utils import plot_pointcloud
+from .pointcloud_bootstrap import bootstrap_dgms
 
 
 class topopipeline:

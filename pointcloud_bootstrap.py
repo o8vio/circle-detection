@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.utils import resample
 from gtda import homology
-from featurization import off_diagonal
+from .featurization import off_diagonal
 
 
 def fill_dgms(dgms, maxs, maxs_idxs):
