@@ -1,5 +1,5 @@
 import numpy as np, matplotlib.pyplot as plt, inspect
-from itertools import product
+from sklearn.metrics import top_k_accuracy_score, log_loss
 
 
 def filter_kwargs(func, kwargs):
@@ -17,7 +17,8 @@ def sample_unit_vector(dim):
     return v / np.linalg.norm(v)
 
 
-def plot_pointcloud(pointcloud, num_circles, sigma):
+def plot_pointcloud(pointcloud, num_circles, circles, sigma, 
+                    colormap='magma', show_circles=False, show_background=False):
     
 
     num_points, world_dim = pointcloud.shape
@@ -30,11 +31,18 @@ def plot_pointcloud(pointcloud, num_circles, sigma):
         
         num_signal_points = round((1-sigma)*num_points)
 
+    cmap = plt.get_cmap(colormap, num_circles)
+    
     if world_dim == 2:
 
         plt.figure(figsize=(6,6))
+        
         plt.axis('equal')
-
+        
+        if not show_background:
+            
+            plt.axis('off')
+        
         start = 0
 
         for i in range(num_circles):
@@ -43,14 +51,24 @@ def plot_pointcloud(pointcloud, num_circles, sigma):
            
           end = start + num_circle_points
 
-          plt.scatter(pointcloud[start:end, 0], pointcloud[start:end, 1], s=10, alpha=1)
+          plt.scatter(pointcloud[start:end, 0], pointcloud[start:end, 1], s=10, alpha=1, color=cmap(i))
+
+          if show_circles:
+              
+              c, r, b = circles[0][i], circles[1][i], circles[2][i]
+              angles = np.linspace(0, 2*np.pi, 300)
+
+              circle_points = [ c + r * np.cos(t) * b[:,0] + r * np.sin(t) * b[:,1] for t in angles]
+
+              plt.plot(*np.transpose(circle_points), color=cmap(i))
 
           start = end
         
-        plt.scatter(pointcloud[start:, 0], pointcloud[start:, 1], s=10, alpha=1)
+        plt.scatter(pointcloud[start:, 0], pointcloud[start:, 1], s=10, alpha=1, color='grey')
         
         plt.show()        
 
+    
     elif world_dim == 3:
 
         ax = plt.axes(projection='3d')
@@ -60,19 +78,35 @@ def plot_pointcloud(pointcloud, num_circles, sigma):
         ax.set_zlim(0,1)
         ax.set_box_aspect([1,1,1])
         
+        if not show_background:
+
+            ax.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+            ax.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+            ax.zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+            ax.set_axis_off()
+
         start = 0
 
         for i in range(num_circles):
-           
-          num_circle_points = num_signal_points // num_circles + 1 if i < num_signal_points % num_circles else num_signal_points // num_circles
-           
-          end = start + num_circle_points
+            
+            num_circle_points = num_signal_points // num_circles + 1 if i < num_signal_points % num_circles else num_signal_points // num_circles
+            
+            end = start + num_circle_points
 
-          ax.scatter(pointcloud[start:end, 0], pointcloud[start:end, 1], pointcloud[start:end, 2], s=10, alpha=1)
+            ax.scatter(pointcloud[start:end, 0], pointcloud[start:end, 1], pointcloud[start:end, 2], s=10, alpha=1, color=cmap(i))
 
-          start = end
+            if show_circles:
+                
+                c, r, b = circles[0][i], circles[1][i], circles[2][i]
+                angles = np.linspace(0, 2*np.pi, 300)
+
+                circle_points = [ c + r * np.cos(t) * b[:,0] + r * np.sin(t) * b[:,1] for t in angles]
+
+                ax.plot(*np.transpose(circle_points), color=cmap(i))
+            
+            start = end
         
-        ax.scatter(pointcloud[start:, 0], pointcloud[start:, 1], pointcloud[start:, 2], s=10, alpha=1)
+        ax.scatter(pointcloud[start:, 0], pointcloud[start:, 1], pointcloud[start:, 2], s=10, alpha=1, color='grey')
         
         plt.show()
     
@@ -98,113 +132,67 @@ def multiclass_brier_score_loss(y_true, y_probs, flip=True):
     return loss/N if not flip else 1 - loss/N
 
 
+def custom_acc(y_true, y_pred, low_bound=0, high_bound=1):
 
-def plot_experiment_results(param_name, param_range, results, 
-                            feat_keys=['Betti curves', 'Features mix', 'Persistence landscapes', 'Persistence images'], 
-                            metrics=['accuracy', 'Brier score loss'], 
-                            score_types=['train', 'test'],
-                            bootstrap=['sin bootstrap', 'con bootstrap'], 
-                            split_by=None, **kwargs):
+    N = y_true.shape[0]
+    score = 0
 
+    for i in range(N):
 
-    axis_map = { 'feature' : (-3, feat_keys), 
-                 'metric' : (-2, metrics), 
-                 'score_type' : (-1, score_types),
-                 **({'boot' : (0, bootstrap)} if results.ndim ==  6 else {}) }
-
-    colors = iter(kwargs['colors']) if 'colors' in kwargs else iter(['tab:blue', 'tab:cyan', 'tab:red', 'tab:pink', 'tab:green', 
-                                                               'lightgreen', 'olive', 'yellowgreen', 'turquoise', 'aquamarine',
-                                                               'darkviolet', 'violet', 'dimgray', 'darkgray', 'darkkhaki', 'khaki'])
+        if y_true[i] - low_bound <= y_pred[i] <= y_true[i] + high_bound:
+            score += 1
     
-    if split_by == None:
+    return score/N
 
-        num_features, num_metrics, num_scoretype = results.shape[-3:]
-        
-        fig = plt.figure(**filter_kwargs(plt.figure, kwargs))
 
-        if 'title' in kwargs:
+def quadratic_distance_loss(y_true, y_pred):
+    
+    N = y_true.shape[0]
+    loss = 0
 
-            plt.title(kwargs['title'], **filter_kwargs(plt.title, kwargs))
+    for i in range(N):
 
-        for k, l, m in product(range(num_features), range(num_metrics), range(num_scoretype)):
+        loss += (y_true[i] - y_pred[i])**2
 
-            values = results[..., k,l,m]
+    return loss / N
 
-            means = values.mean(axis=1)
-            stds = values.std(axis=1)
 
-            plt.plot(param_range, means, '-o', label=string_j+' '+string_k, color=next(colors))
-            plt.fill_between(param_range, means - stds, means + stds, color=next(colors), alpha=0.1)
-        
-        plt.xlabel(param_name)
-        plt.ylabel('score')
-        plt.legend(loc='lower right')
-        plt.grid(axis="y", linestyle="--", alpha=0.6)
+def metrics_array(y_train, y_test, predicted_train_probas, predicted_test_probas):
+
+    num_train_samples, num_test_samples = y_train.shape[0], y_test.shape[0]
+    
+    train_preds = np.array([ np.argmax(predicted_train_probas[i]) for i in range(num_train_samples) ])
+    test_preds = np.array([ np.argmax(predicted_test_probas[i]) for i in range(num_test_samples) ])
     
     
-    else:
+    rv = np.zeros(shape=(7,2))   
 
-        split_axis, split_strings = axis_map.pop(split_by)
-        
-        n_subplots = results.shape[split_axis]
-        
-        rows, cols = (n_subplots + 1) // 2, 1 if n_subplots == 1 else 2
-
-        fig, axs = plt.subplots(rows, cols, **filter_kwargs(plt.subplots, kwargs), 
-                                            **filter_kwargs(plt.figure, kwargs))
-
-        axs = axs.flatten()
-        
-        inner_cats = list(axis_map.values())
-        axis_idx_label_lists = [ [(axis, (idx, label)) for idx, label in enumerate(labels)] 
-                                for axis, labels in inner_cats ]
-
-        if 'title' in kwargs:
-            
-            plt.title(kwargs['title'], **filter_kwargs(plt.title, kwargs))
-
-        
-        for i in range(n_subplots):
-
-            ax = axs[i]
-
-            ax.set_title(split_strings[i])
-            
-            for curve in product( *axis_idx_label_lists ):
-
-                slicer = [slice(None)] * results.ndim
-                slicer[split_axis] = i
-                
-                if results.ndim == 5:
-                    (axis1, (j, string_j)), (axis2, (k, string_k)) = curve
-                    slicer[axis1] = j
-                    slicer[axis2] = k
-                    
-                else:
-                    (axis1, (j, string_j)), (axis2, (k, string_k)), (axis3, (l, string_l)) = curve
-                    slicer[axis1] = j
-                    slicer[axis2] = k
-                    slicer[axis3] = l
-                    
-                values = results[tuple(slicer)]
-                
-                means = values.mean(axis=1)
-                stds = values.std(axis=1)
-
-                curve_color = next(colors)
-                ax.plot(param_range, means, '-o', label=string_j+' '+string_k+' '+string_l, color=curve_color)
-                ax.fill_between(param_range, means - stds, means + stds, color=curve_color, alpha=0.1)
-
-            
-            ax.set_xlabel(param_name)
-            ax.set_ylabel('score')
-            ax.legend(loc='lower right')
-            ax.grid(axis="y", linestyle="--", alpha=0.6)
+    # accuracy
+    rv[0,0] = custom_acc(y_train, train_preds, low_bound=0, high_bound=0)
+    rv[0,1] = custom_acc(y_test, test_preds, low_bound=0, high_bound=0)
     
-    if 'filename' in kwargs:
+    #custom accuracy 1:
+    rv[1,0] = custom_acc(y_train, train_preds, low_bound=0, high_bound=1)
+    rv[1,1] = custom_acc(y_test, test_preds, low_bound=0, high_bound=1)
 
-        fig.savefig(kwargs['filename'], dpi=fig.dpi)
+    #custom accuracy 2:
+    rv[2,0] = custom_acc(y_train, train_preds, low_bound=1, high_bound=0)
+    rv[2,1] = custom_acc(y_test, test_preds, low_bound=1, high_bound=0)
+
+    #top 2 accuracy:
+    rv[3,0] = top_k_accuracy_score(y_train, predicted_train_probas, k=2)
+    rv[3,1] = top_k_accuracy_score(y_test, predicted_test_probas, k=2)
+
+    #quadratic distance
+    rv[4,0] = quadratic_distance_loss(y_train, train_preds)
+    rv[4,1] = quadratic_distance_loss(y_test, test_preds)
+
+    #brier-score
+    rv[5,0] = multiclass_brier_score_loss(y_train, predicted_train_probas, flip=False)
+    rv[5,1] = multiclass_brier_score_loss(y_test, predicted_test_probas, flip=False)
     
-    else:
+    #normalized cross-entropy                
+    rv[6,0] = log_loss(y_train, predicted_train_probas, normalize=True)
+    rv[6,1] = log_loss(y_test, predicted_test_probas, normalize=True)
 
-        plt.show()
+    return rv
